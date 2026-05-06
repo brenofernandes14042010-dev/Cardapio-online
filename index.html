@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardápio Pro</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0f0f0f;
+  color: white;
+}
+
+header {
+  background: #e63946;
+  padding: 20px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 15px;
+}
+
+.card {
+  background: #1c1c1c;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+button {
+  background: #25d366;
+  border: none;
+  padding: 8px 10px;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cart {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #111;
+  padding: 15px;
+  border-top: 2px solid #333;
+}
+
+.total {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.finalizar {
+  width: 100%;
+  padding: 12px;
+  background: #e63946;
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>🍔 MEU CARDÁPIO PRO</header>
+
+<div class="container">
+
+  <div class="card">
+    <div>
+      <b>X-Burger</b><br>
+      R$ 12,00
+    </div>
+    <button onclick="add('X-Burger',12)">Adicionar</button>
+  </div>
+
+  <div class="card">
+    <div>
+      <b>X-Salada</b><br>
+      R$ 14,00
+    </div>
+    <button onclick="add('X-Salada',14)">Adicionar</button>
+  </div>
+
+  <div class="card">
+    <div>
+      <b>Refrigerante</b><br>
+      R$ 5,00
+    </div>
+    <button onclick="add('Refrigerante',5)">Adicionar</button>
+  </div>
+
+</div>
+
+<!-- CARRINHO -->
+<div class="cart">
+  <div class="total" id="total">Total: R$ 0</div>
+  <button class="finalizar" onclick="finalizar()">Finalizar pedido no WhatsApp</button>
+</div>
+
+<script>
+let carrinho = [];
+
+function add(nome, preco) {
+  carrinho.push({nome, preco});
+  atualizar();
+}
+
+function atualizar() {
+  let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
+  document.getElementById("total").innerText = "Total: R$ " + total;
+}
+
+function finalizar() {
+  let msg = "Olá! Quero fazer um pedido:%0A";
+
+  carrinho.forEach(i => {
+    msg += "- " + i.nome + " R$ " + i.preco + "%0A";
+  });
+
+  let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
+  msg += "%0ATotal: R$ " + total;
+
+  window.open("https://wa.me/5511999999999?text=" + msg);
+}
+</script>
+
+</body>
+</html
