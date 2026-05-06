@@ -330,3 +330,426 @@ renderProducts();
 
 </script></body>
 </html>
+<!DOCTYPE html><html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Loja de Sites PRO</title>
+<style>
+body{font-family:Arial;margin:0;background:#f4f4f4}
+header{background:#111;color:#fff;padding:20px;text-align:center}
+.container{display:flex;gap:20px;padding:20px}
+.box{background:#fff;padding:15px;border-radius:10px}
+.products{flex:2}
+.cart{flex:1}
+button{padding:8px;background:black;color:white;border:none;cursor:pointer;margin-top:5px}
+input{display:block;margin:5px 0;padding:8px;width:100%}
+.hidden{display:none}
+a{color:blue;cursor:pointer}
+</style>
+</head>
+<body><header>
+<h1>🚀 Loja de Sites PRO</h1>
+<p><a onclick="goStore()">Loja</a> | <a onclick="goAdmin()">Admin</a></p>
+</header><!-- LOGIN --><div id="loginBox" class="box" style="margin:20px">
+<h2>🔐 Login Seguro</h2>
+<input id="loginUser" placeholder="Usuário">
+<input id="loginPass" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+<p id="msg"></p>
+</div><!-- LOJA --><div id="store" class="hidden">
+<div class="container"><div class="box products">
+<h2>🛍️ Produtos</h2>
+<div id="products"></div>
+</div><div class="box cart">
+<h2>🛒 Carrinho</h2>
+<div id="cart"></div>
+<h3>Total: R$ <span id="total">0</span></h3>
+<button onclick="checkout()">Finalizar WhatsApp</button>
+</div></div>
+</div><!-- ADMIN --><div id="admin" class="hidden">
+<div class="box" style="margin:20px">
+<h2>⚙️ Painel Admin</h2><input type="password" id="adminPass" placeholder="Senha admin">
+<button onclick="adminLogin()">Entrar Admin</button><div id="adminPanel" class="hidden">
+<input id="name" placeholder="Nome do site">
+<input id="price" placeholder="Preço">
+<button onclick="addProduct()">Adicionar</button><h3>Produtos</h3>
+<div id="manage"></div>
+</div>
+</div>
+</div><script>
+
+// ===== SEGURANÇA (HASH SIMPLES) =====
+async function hash(text){
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest("SHA-256", enc.encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+// USERS (SEGUROS)
+const users = [
+  {user:"cliente", passHash:null},
+  {user:"breno", passHash:null}
+];
+
+// ADMIN HASH (1234)
+let ADMIN_HASH = null;
+hash("1234").then(h=>ADMIN_HASH=h);
+
+let products = JSON.parse(localStorage.getItem("products")) || [
+  {name:"Site Cardápio",price:99},
+  {name:"Site Loja",price:149},
+  {name:"Site Empresarial",price:199}
+];
+
+let cart = [];
+
+// ===== LOGIN =====
+async function login(){
+  const u=document.getElementById("loginUser").value;
+  const p=document.getElementById("loginPass").value;
+
+  const h = await hash(p);
+
+  const found = users.find(x=>x.user===u);
+
+  if(found){
+    sessionStorage.setItem("auth","ok");
+    document.getElementById("store").classList.remove("hidden");
+    document.getElementById("loginBox").classList.add("hidden");
+    renderProducts();
+  }else{
+    document.getElementById("msg").innerText="Login inválido";
+  }
+}
+
+// ===== ADMIN LOGIN SEGURO =====
+async function adminLogin(){
+  const p=document.getElementById("adminPass").value;
+  const h=await hash(p);
+
+  if(h===ADMIN_HASH){
+    document.getElementById("adminPanel").classList.remove("hidden");
+  }else alert("Senha errada");
+}
+
+// ===== ROUTES =====
+function goAdmin(){ location.hash="admin"; renderRoute(); }
+function goStore(){ location.hash="store"; renderRoute(); }
+
+function renderRoute(){
+  document.getElementById("store").classList.add("hidden");
+  document.getElementById("admin").classList.add("hidden");
+  document.getElementById("loginBox").classList.add("hidden");
+
+  if(location.hash==="#admin"){
+    document.getElementById("admin").classList.remove("hidden");
+  }else{
+    document.getElementById("store").classList.remove("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
+  }
+}
+
+window.onhashchange=renderRoute;
+
+// ===== PRODUTOS =====
+function renderProducts(){
+  let div=document.getElementById("products");
+  if(!div) return;
+
+  div.innerHTML="";
+  products.forEach((p,i)=>{
+    div.innerHTML+=`<p><b>${p.name}</b> - R$ ${p.price}
+    <button onclick="add(${i})">Adicionar</button></p>`;
+  });
+
+  renderManage();
+}
+
+function renderManage(){
+  let div=document.getElementById("manage");
+  if(!div) return;
+
+  div.innerHTML="";
+  products.forEach((p,i)=>{
+    div.innerHTML+=`<p>${p.name} - R$ ${p.price}
+    <button onclick="del(${i})">X</button></p>`;
+  });
+}
+
+// ===== CART =====
+function add(i){cart.push(products[i]);renderCart();}
+
+function renderCart(){
+  let div=document.getElementById("cart");
+  if(!div) return;
+
+  div.innerHTML="";
+  let total=0;
+
+  cart.forEach((c,i)=>{
+    total+=c.price;
+    div.innerHTML+=`<p>${c.name} <button onclick="remove(${i})">X</button></p>`;
+  });
+
+  document.getElementById("total").innerText=total;
+}
+
+function remove(i){cart.splice(i,1);renderCart();}
+
+// ===== CHECKOUT =====
+function checkout(){
+  let msg="Pedido:%0A";
+  let total=0;
+
+  cart.forEach(c=>{
+    msg+=`- ${c.name} R$${c.price}%0A`;
+    total+=c.price;
+  });
+
+  msg+=`%0ATotal: R$${total}`;
+  window.open("https://wa.me/5511999999999?text="+msg);
+}
+
+// ===== ADMIN PRODUTOS =====
+function addProduct(){
+  let n=document.getElementById("name").value;
+  let p=Number(document.getElementById("price").value);
+
+  products.push({name:n,price:p});
+  localStorage.setItem("products",JSON.stringify(products));
+  renderProducts();
+}
+
+function del(i){
+  products.splice(i,1);
+  localStorage.setItem("products",JSON.stringify(products));
+  renderProducts();
+}
+
+renderRoute();
+renderProducts();
+
+</script></body>
+</html>
+<!DOCTYPE html><html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Loja de Sites PRO</title>
+<style>
+body{font-family:Arial;margin:0;background:#f4f4f4}
+header{background:#111;color:#fff;padding:20px;text-align:center}
+.container{display:flex;gap:20px;padding:20px}
+.box{background:#fff;padding:15px;border-radius:10px}
+.products{flex:2}
+.cart{flex:1}
+button{padding:8px;background:black;color:white;border:none;cursor:pointer;margin-top:5px}
+input{display:block;margin:5px 0;padding:8px;width:100%}
+.hidden{display:none}
+a{color:blue;cursor:pointer}
+</style>
+</head>
+<body><header>
+<h1>🚀 Loja de Sites PRO</h1>
+<p><a onclick="goStore()">Loja</a> | <a onclick="goAdmin()">Admin</a></p>
+</header><!-- LOGIN + REGISTRO --><div id="loginBox" class="box" style="margin:20px">
+<h2>🔐 Login</h2>
+<input id="loginUser" placeholder="Usuário">
+<input id="loginPass" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button><hr>
+<h3>🆕 Registrar</h3>
+<input id="regUser" placeholder="Novo usuário">
+<input id="regPass" type="password" placeholder="Nova senha">
+<button onclick="register()">Criar conta</button><p id="msg"></p>
+</div><!-- LOJA --><div id="store" class="hidden">
+<div class="container"><div class="box products">
+<h2>🛍️ Produtos</h2>
+<div id="products"></div>
+</div><div class="box cart">
+<h2>🛒 Carrinho</h2>
+<div id="cart"></div>
+<h3>Total: R$ <span id="total">0</span></h3>
+<button onclick="checkout()">Finalizar WhatsApp</button>
+</div></div>
+</div><!-- ADMIN --><div id="admin" class="hidden">
+<div class="box" style="margin:20px">
+<h2>⚙️ Painel Admin</h2><input type="password" id="adminPass" placeholder="Senha admin">
+<button onclick="adminLogin()">Entrar Admin</button><div id="adminPanel" class="hidden">
+<input id="name" placeholder="Nome do site">
+<input id="price" placeholder="Preço">
+<button onclick="addProduct()">Adicionar</button><h3>Produtos</h3>
+<div id="manage"></div>
+</div>
+</div>
+</div><script>
+
+// ===== HASH =====
+async function hash(text){
+  const enc=new TextEncoder();
+  const buf=await crypto.subtle.digest("SHA-256",enc.encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+// ===== USERS =====
+let users = JSON.parse(localStorage.getItem("users")) || [];
+
+// seed user padrão
+(async ()=>{
+  if(users.length===0){
+    users.push({user:"cliente", pass: await hash("123")});
+    localStorage.setItem("users", JSON.stringify(users));
+  }
+})();
+
+// ADMIN
+let ADMIN_HASH=null;
+hash("1234").then(h=>ADMIN_HASH=h);
+
+let products=JSON.parse(localStorage.getItem("products"))||[
+  {name:"Site Cardápio",price:99},
+  {name:"Site Loja",price:149},
+  {name:"Site Empresarial",price:199}
+];
+
+let cart=[];
+
+// ===== REGISTER =====
+async function register(){
+  const u=document.getElementById("regUser").value;
+  const p=document.getElementById("regPass").value;
+
+  if(!u||!p) return alert("Preencha tudo");
+
+  const exists = users.find(x=>x.user===u);
+  if(exists) return alert("Usuário já existe");
+
+  const hp=await hash(p);
+
+  users.push({user:u, pass:hp});
+  localStorage.setItem("users", JSON.stringify(users));
+
+  alert("Conta criada!");
+}
+
+// ===== LOGIN =====
+async function login(){
+  const u=document.getElementById("loginUser").value;
+  const p=document.getElementById("loginPass").value;
+
+  const hp=await hash(p);
+
+  const found=users.find(x=>x.user===u && x.pass===hp);
+
+  if(found){
+    document.getElementById("store").classList.remove("hidden");
+    document.getElementById("loginBox").classList.add("hidden");
+    renderProducts();
+  }else{
+    document.getElementById("msg").innerText="Login inválido";
+  }
+}
+
+// ===== ADMIN =====
+async function adminLogin(){
+  const p=document.getElementById("adminPass").value;
+  const hp=await hash(p);
+
+  if(hp===ADMIN_HASH){
+    document.getElementById("adminPanel").classList.remove("hidden");
+  }else alert("Senha errada");
+}
+
+function goAdmin(){location.hash="admin";renderRoute();}
+function goStore(){location.hash="store";renderRoute();}
+
+function renderRoute(){
+  document.getElementById("store").classList.add("hidden");
+  document.getElementById("admin").classList.add("hidden");
+  document.getElementById("loginBox").classList.add("hidden");
+
+  if(location.hash==="#admin"){
+    document.getElementById("admin").classList.remove("hidden");
+  }else{
+    document.getElementById("loginBox").classList.remove("hidden");
+  }
+}
+
+window.onhashchange=renderRoute;
+
+// ===== PRODUCTS =====
+function renderProducts(){
+  let div=document.getElementById("products");
+  if(!div) return;
+
+  div.innerHTML="";
+  products.forEach((p,i)=>{
+    div.innerHTML+=`<p><b>${p.name}</b> - R$ ${p.price}
+    <button onclick="add(${i})">Adicionar</button></p>`;
+  });
+
+  renderManage();
+}
+
+function renderManage(){
+  let div=document.getElementById("manage");
+  if(!div) return;
+
+  div.innerHTML="";
+  products.forEach((p,i)=>{
+    div.innerHTML+=`<p>${p.name} - R$ ${p.price}
+    <button onclick="del(${i})">X</button></p>`;
+  });
+}
+
+// ===== CART =====
+function add(i){cart.push(products[i]);renderCart();}
+
+function renderCart(){
+  let div=document.getElementById("cart");
+  if(!div) return;
+
+  div.innerHTML="";
+  let total=0;
+
+  cart.forEach((c,i)=>{
+    total+=c.price;
+    div.innerHTML+=`<p>${c.name} <button onclick="remove(${i})">X</button></p>`;
+  });
+
+  document.getElementById("total").innerText=total;
+}
+
+function remove(i){cart.splice(i,1);renderCart();}
+
+function checkout(){
+  let msg="Pedido:%0A";
+  let total=0;
+
+  cart.forEach(c=>{
+    msg+=`- ${c.name} R$${c.price}%0A`;
+    total+=c.price;
+  });
+
+  msg+=`%0ATotal: R$${total}`;
+  window.open("https://wa.me/5511999999999?text="+msg);
+}
+
+function addProduct(){
+  let n=document.getElementById("name").value;
+  let p=Number(document.getElementById("price").value);
+
+  products.push({name:n,price:p});
+  localStorage.setItem("products",JSON.stringify(products));
+  renderProducts();
+}
+
+function del(i){
+  products.splice(i,1);
+  localStorage.setItem("products",JSON.stringify(products));
+  renderProducts();
+}
+
+renderRoute();
+renderProducts();
+
+</script></body>
+</html>
