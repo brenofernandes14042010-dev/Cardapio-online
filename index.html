@@ -118,17 +118,25 @@ button {
 </div>
 
 <script>
-  function abrirPainel() {
-  let senha = prompt("Digite a senha do admin:");
+  <div class="admin" id="admin">
 
-  if (senha === "1234") {
-    document.getElementById("painel").style.display = "block";
-  } else {
-    alert("Senha incorreta ❌");
-  }
-}
+  <h3>Painel Admin</h3>
 
-function salvarPrecos() {
+  <b>X-Burger</b><br>
+  Nome: <input id="n1"><br>
+  Preço: <input id="a1"><br><br>
+
+  <b>X-Salada</b><br>
+  Nome: <input id="n2"><br>
+  Preço: <input id="a2"><br><br>
+
+  <b>Refrigerante</b><br>
+  Nome: <input id="n3"><br>
+  Preço: <input id="a3"><br><br>
+
+  <button onclick="salvar()">💾 Salvar alterações</button>
+
+</div>
   document.getElementById("p1").innerText = document.getElementById("preco1").value;
   document.getElementById("p2").innerText = document.getElementById("preco2").value;
   document.getElementById("p3").innerText = document.getElementById("preco3").value;
@@ -183,4 +191,65 @@ function finalizar() {
 
   <button onclick="salvarPrecos()">💾 Salvar</button>
 </div>
-</html
+</html<div class="card">
+  <img src="imagens/xburger.jpg">
+
+  <div>
+    <b id="nome1">X-Burger</b><br>
+    R$ <span id="p1">12</span>
+  </div>
+
+  <button onclick="add(getNome('nome1'),get('p1'))">+</button>
+</div>
+
+<div class="card">
+  <img src="imagens/xsalada.jpg">
+
+  <div>
+    <b id="nome2">X-Salada</b><br>
+    R$ <span id="p2">14</span>
+  </div>
+
+  <button onclick="add(getNome('nome2'),get('p2'))">+</button>
+</div>
+
+<div class="card">
+  <img src="imagens/refri.jpg">
+
+  <div>
+    <b id="nome3">Refrigerante</b><br>
+    R$ <span id="p3">5</span>
+  </div>
+
+  <button onclick="add(getNome('nome3'),get('p3'))">+</button>
+</div>
+function salvar() {
+  // nomes
+  localStorage.setItem("n1", document.getElementById("n1").value);
+  localStorage.setItem("n2", document.getElementById("n2").value);
+  localStorage.setItem("n3", document.getElementById("n3").value);
+
+  // preços
+  localStorage.setItem("p1", document.getElementById("a1").value);
+  localStorage.setItem("p2", document.getElementById("a2").value);
+  localStorage.setItem("p3", document.getElementById("a3").value);
+
+  carregar();
+  alert("Alterações salvas ✔️");
+}
+
+function carregar() {
+  document.getElementById("nome1").innerText = localStorage.getItem("n1") || "X-Burger";
+  document.getElementById("nome2").innerText = localStorage.getItem("n2") || "X-Salada";
+  document.getElementById("nome3").innerText = localStorage.getItem("n3") || "Refrigerante";
+
+  document.getElementById("p1").innerText = localStorage.getItem("p1") || 12;
+  document.getElementById("p2").innerText = localStorage.getItem("p2") || 14;
+  document.getElementById("p3").innerText = localStorage.getItem("p3") || 5;
+}
+
+function getNome(id) {
+  return document.getElementById(id).innerText;
+}
+
+carregar();
