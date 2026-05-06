@@ -1,255 +1,114 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cardápio Pro</title>
+import { useEffect, useMemo, useState } from "react"; import { Button } from "@/components/ui/button"; import { Card, CardContent } from "@/components/ui/card"; import { Input } from "@/components/ui/input"; import { Trash } from "lucide-react";
 
-<style>
-  @keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+export default function App() { const defaultItems = [ { id: 1, name: "X-Burguer", price: 15 }, { id: 2, name: "X-Salada", price: 18 }, { id: 3, name: "Batata Frita", price: 10 }, { id: 4, name: "Refrigerante", price: 6 }, ];
+
+const [items, setItems] = useState(() => { const saved = localStorage.getItem("items"); return saved ? JSON.parse(saved) : defaultItems; });
+
+const [cart, setCart] = useState([]); const [orders, setOrders] = useState(() => { const saved = localStorage.getItem("orders"); return saved ? JSON.parse(saved) : []; });
+
+const [admin, setAdmin] = useState(false); const [password, setPassword] = useState(""); const ADMIN_PASS = "1234";
+
+const [whatsapp, setWhatsapp] = useState("5511953577785"); const [paymentMethod, setPaymentMethod] = useState("pix"); const [pixQr, setPixQr] = useState(null);
+
+useEffect(() => { localStorage.setItem("items", JSON.stringify(items)); }, [items]);
+
+useEffect(() => { localStorage.setItem("orders", JSON.stringify(orders)); }, [orders]);
+
+const playSound = () => { const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg"); audio.play(); };
+
+const addToCart = (item) => { setCart([...cart, item]); playSound(); };
+
+const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
+
+const total = useMemo(() => cart.reduce((a, b) => a + b.price, 0), [cart]);
+
+// ===== PIX AUTOMÁTICO (INTEGRAÇÃO REAL) ===== const createPixPayment = async (order) => { try { // Backend necessário (ex: /api/create-pix) const res = await fetch("/api/create-pix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: order.total, description: "Pedido restaurante", }), });
+
+const data = await res.json();
+
+  // Espera resposta tipo Mercado Pago:
+  // { qr_code: "base64...", payment_id: "123" }
+  setPixQr(data.qr_code);
+
+  window.open(data.payment_url, "_blank");
+} catch (err) {
+  alert("Erro ao gerar PIX. Configure o backend.");
 }
 
-.pop {
-  animation: pop 0.3s ease;
-}
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f0f0f;
-  color: white;
-}
+};
 
-header {
-  background: #e63946;
-  padding: 20px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-}
+const sendOrder = () => { if (cart.length === 0) return;
 
-.container {
-  max-width: 900px;
-  margin: auto;
-  padding: 15px;
+const newOrder = {
+  id: Date.now(),
+  items: cart,
+  total,
+  status: "Aguardando pagamento",
+  payment: paymentMethod,
+  date: new Date().toLocaleString(),
+};
+
+setOrders([newOrder, ...orders]);
+setCart([]);
+
+if (paymentMethod === "pix") {
+  createPixPayment(newOrder);
 }
 
-.card {
-  background: #1c1c1c;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+let msg = "🍔 NOVO PEDIDO%0A%0A";
+newOrder.items.forEach(i => {
+  msg += `- ${i.name} R$${i.price}%0A`;
+});
 
-button {
-  background: #25d366;
-  border: none;
-  padding: 8px 10px;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-}
+msg += `%0A💰 Total: R$${newOrder.total}%0A💳 PIX`;
 
-.cart {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #111;
-  padding: 15px;
-  border-top: 2px solid #333;
-}
+window.open(`https://wa.me/${whatsapp}?text=${msg}`, "_blank");
 
-.total {
-  font-size: 18px;
-  margin-bottom: 10px;
-}
+};
 
-.finalizar {
-  width: 100%;
-  padding: 12px;
-  background: #e63946;
-  border: none;
-  color: white;
-  font-size: 16px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-</style>
-</head>
+const loginAdmin = () => { if (password === ADMIN_PASS) setAdmin(true); else alert("Senha incorreta"); };
 
-<body>
+return ( <div className="p-4 max-w-5xl mx-auto"> <h1 className="text-3xl font-bold">🍔 iFood PRO PIX</h1>
 
-<header>🍔 CARDÁPIO SIRI CASCUDO</header>
-  <div class="card">
-  <div>
-    <b>X-Burger</b><br>
-    R$ <span id="p1">12</span>
+<Input className="my-2" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+
+  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+    <option value="pix">PIX automático</option>
+    <option value="card">Cartão</option>
+  </select>
+
+  <div className="grid md:grid-cols-3 gap-4">
+
+    <div>
+      {items.map(item => (
+        <Card key={item.id} className="mb-2">
+          <CardContent className="flex justify-between">
+            <div>{item.name} - R$ {item.price}</div>
+            <Button onClick={() => addToCart(item)}>+</Button>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+
+    <div>
+      <h2>Carrinho</h2>
+      {cart.map((item, i) => (
+        <div key={i} className="flex justify-between">
+          {item.name} R$ {item.price}
+          <Button onClick={() => removeFromCart(i)}>X</Button>
+        </div>
+      ))}
+
+      <h3>Total: R$ {total}</h3>
+      <Button onClick={sendOrder}>Finalizar PIX</Button>
+
+      {pixQr && (
+        <div className="mt-4">
+          <h3>PIX QR CODE:</h3>
+          <img src={pixQr} alt="PIX" />
+        </div>
+      )}
+    </div>
+
   </div>
-  <button onclick="add('X-Burger',getPreco('p1'))">Adicionar</button>
 </div>
-
-<div class="card">
-  <div>
-    <b>X-Salada</b><br>
-    R$ <span id="p2">14</span>
-  </div>
-  <button onclick="add('X-Salada',getPreco('p2'))">Adicionar</button>
-</div>
-
-<div class="card">
-  <div>
-    <b>Refrigerante</b><br>
-    R$ <span id="p3">5</span>
-  </div>
-  <button onclick="add('Refrigerante',getPreco('p3'))">Adicionar</button>
-</div>
-
-
-<!-- CARRINHO -->
-<div class="cart">
-  <div class="total" id="total">Total: R$ 0</div>
-  <button class="finalizar" onclick="finalizar()">Finalizar pedido no WhatsApp</button>
-</div>
-
-<script>
-  <div class="admin" id="admin">
-
-  <h3>Painel Admin</h3>
-
-  <b>X-Burger</b><br>
-  Nome: <input id="n1"><br>
-  Preço: <input id="a1"><br><br>
-
-  <b>X-Salada</b><br>
-  Nome: <input id="n2"><br>
-  Preço: <input id="a2"><br><br>
-
-  <b>Refrigerante</b><br>
-  Nome: <input id="n3"><br>
-  Preço: <input id="a3"><br><br>
-
-  <button onclick="salvar()">💾 Salvar alterações</button>
-
-</div>
-  document.getElementById("p1").innerText = document.getElementById("preco1").value;
-  document.getElementById("p2").innerText = document.getElementById("preco2").value;
-  document.getElementById("p3").innerText = document.getElementById("preco3").value;
-
-  alert("Preços atualizados com sucesso ✔️");
-}
-
-function getPreco(id) {
-  return parseFloat(document.getElementById(id).innerText);
-}
-let carrinho = [];
-
-function add(nome, preco) {
-  carrinho.push({nome, preco});
-  atualizar();
-}
-
-function atualizar() {
-  let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
-  document.getElementById("total").innerText = "Total: R$ " + total;
-}
-
-function finalizar() {
-  let msg = "Olá! Quero fazer um pedido:%0A";
-
-  carrinho.forEach(i => {
-    msg += "- " + i.nome + " R$ " + i.preco + "%0A";
-  });
-
-  let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
-  msg += "%0ATotal: R$ " + total;
-
-  window.open("https://wa.me/5511953577785?text=" + msg);
-}
-</script>
-  
-  <div style="text-align:center; padding:10px;">
-  <button onclick="abrirPainel()">🔧 Painel Admin</button>
-</div>
-
-<div id="painel" style="display:none; background:#222; padding:15px; margin:10px; border-radius:10px; max-width:400px; margin:auto;">
-  <h3>Painel de Preços</h3>
-
-  <label>X-Burger:</label>
-  <input type="number" id="preco1" value="12"><br><br>
-
-  <label>X-Salada:</label>
-  <input type="number" id="preco2" value="14"><br><br>
-
-  <label>Refrigerante:</label>
-  <input type="number" id="preco3" value="5"><br><br>
-
-  <button onclick="salvarPrecos()">💾 Salvar</button>
-</div>
-</html<div class="card">
-  <img src="imagens/xburger.jpg">
-
-  <div>
-    <b id="nome1">X-Burger</b><br>
-    R$ <span id="p1">12</span>
-  </div>
-
-  <button onclick="add(getNome('nome1'),get('p1'))">+</button>
-</div>
-
-<div class="card">
-  <img src="imagens/xsalada.jpg">
-
-  <div>
-    <b id="nome2">X-Salada</b><br>
-    R$ <span id="p2">14</span>
-  </div>
-
-  <button onclick="add(getNome('nome2'),get('p2'))">+</button>
-</div>
-
-<div class="card">
-  <img src="imagens/refri.jpg">
-
-  <div>
-    <b id="nome3">Refrigerante</b><br>
-    R$ <span id="p3">5</span>
-  </div>
-
-  <button onclick="add(getNome('nome3'),get('p3'))">+</button>
-</div>
-function salvar() {
-  // nomes
-  localStorage.setItem("n1", document.getElementById("n1").value);
-  localStorage.setItem("n2", document.getElementById("n2").value);
-  localStorage.setItem("n3", document.getElementById("n3").value);
-
-  // preços
-  localStorage.setItem("p1", document.getElementById("a1").value);
-  localStorage.setItem("p2", document.getElementById("a2").value);
-  localStorage.setItem("p3", document.getElementById("a3").value);
-
-  carregar();
-  alert("Alterações salvas ✔️");
-}
-
-function carregar() {
-  document.getElementById("nome1").innerText = localStorage.getItem("n1") || "X-Burger";
-  document.getElementById("nome2").innerText = localStorage.getItem("n2") || "X-Salada";
-  document.getElementById("nome3").innerText = localStorage.getItem("n3") || "Refrigerante";
-
-  document.getElementById("p1").innerText = localStorage.getItem("p1") || 12;
-  document.getElementById("p2").innerText = localStorage.getItem("p2") || 14;
-  document.getElementById("p3").innerText = localStorage.getItem("p3") || 5;
-}
-
-function getNome(id) {
-  return document.getElementById(id).innerText;
-}
-
-carregar();
