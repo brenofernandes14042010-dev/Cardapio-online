@@ -1,69 +1,51 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!DOCTYPE html><html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <title>Loja de Sites PRO</title>
-
 <style>
 body{font-family:Arial;margin:0;background:#f4f4f4}
 header{background:#111;color:#fff;padding:20px;text-align:center}
 .container{display:flex;gap:20px;padding:20px}
-
 .box{background:#fff;padding:15px;border-radius:10px}
 .products{flex:2}
 .cart{flex:1}
-
 button{padding:8px;background:black;color:white;border:none;cursor:pointer;margin-top:5px}
 input{display:block;margin:5px 0;padding:8px;width:100%}
+.hidden{display:none}
 </style>
 </head>
-
-<body>
-
-<header>
+<body><header>
 <h1>🚀 Loja de Sites PRO</h1>
-</header>
-
-<div class="container">
-
-<!-- PRODUTOS -->
-<div class="box products">
+</header><!-- LOGIN AREA --><div class="box" style="margin:20px">
+<h2>🔐 Login do Sistema</h2>
+<input id="loginUser" placeholder="Usuário">
+<input id="loginPass" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+<p id="loginMsg"></p>
+</div><div id="app" class="hidden"><div class="container"><!-- PRODUTOS --><div class="box products">
 <h2>🛍️ Produtos</h2>
 <div id="products"></div>
-</div>
-
-<!-- CARRINHO -->
-<div class="box cart">
+</div><!-- CARRINHO --><div class="box cart">
 <h2>🛒 Carrinho</h2>
 <div id="cart"></div>
 <h3>Total: R$ <span id="total">0</span></h3>
-
 <button onclick="checkout()">Finalizar WhatsApp</button>
-</div>
-
-</div>
-
-<!-- ADMIN -->
-<div class="box" style="margin:20px">
-<h2>⚙️ Painel Admin</h2>
-
-<input type="password" id="pass" placeholder="Senha admin">
-<button onclick="login()">Entrar</button>
-
-<div id="admin" style="display:none;margin-top:10px">
-
-<input id="name" placeholder="Nome do site">
+</div></div><!-- ADMIN --><div class="box" style="margin:20px">
+<h2>⚙️ Painel Admin</h2><input type="password" id="pass" placeholder="Senha admin">
+<button onclick="adminLogin()">Entrar Admin</button><div id="admin" class="hidden" style="margin-top:10px"><input id="name" placeholder="Nome do site">
 <input id="price" placeholder="Preço">
+<button onclick="addProduct()">Adicionar</button><h3>Gerenciar Produtos</h3>
+<div id="manage"></div></div>
+</div></div><script>
 
-<button onclick="addProduct()">Adicionar</button>
+// ===== USERS =====
+const users = [
+  {user:"cliente", pass:"123"},
+  {user:"breno", pass:"123"}
+];
 
-<h3>Gerenciar Produtos</h3>
-<div id="manage"></div>
-
-</div>
-</div>
-
-<script>
+// ===== ADMIN =====
+const ADMIN_PASS = "1234";
 
 let products = JSON.parse(localStorage.getItem("products")) || [
   {name:"Site Cardápio",price:99},
@@ -72,6 +54,30 @@ let products = JSON.parse(localStorage.getItem("products")) || [
 ];
 
 let cart = [];
+
+function login(){
+  const u=document.getElementById("loginUser").value;
+  const p=document.getElementById("loginPass").value;
+
+  const found = users.find(x=>x.user===u && x.pass===p);
+
+  if(found){
+    document.getElementById("app").classList.remove("hidden");
+    document.getElementById("loginMsg").innerText="Login OK";
+    renderProducts();
+  }else{
+    document.getElementById("loginMsg").innerText="Login inválido";
+  }
+}
+
+function adminLogin(){
+  let pass=document.getElementById("pass").value;
+  if(pass===ADMIN_PASS){
+    document.getElementById("admin").classList.remove("hidden");
+  }else{
+    alert("Senha admin errada");
+  }
+}
 
 function renderProducts(){
   let div=document.getElementById("products");
@@ -116,10 +122,7 @@ function renderCart(){
   document.getElementById("total").innerText=total;
 }
 
-function remove(i){
-  cart.splice(i,1);
-  renderCart();
-}
+function remove(i){cart.splice(i,1);renderCart();}
 
 function checkout(){
   let msg="Pedido:%0A";
@@ -132,16 +135,7 @@ function checkout(){
 
   msg+=`%0ATotal: R$${total}`;
 
-  window.open("https://wa.me/5511999999999?text="+msg);
-}
-
-function login(){
-  let pass=document.getElementById("pass").value;
-  if(pass==="1234"){
-    document.getElementById("admin").style.display="block";
-  }else{
-    alert("Senha errada");
-  }
+  window.open("https://wa.me/5511953577785?text="+msg);
 }
 
 function addProduct(){
@@ -150,7 +144,6 @@ function addProduct(){
 
   products.push({name,price});
   localStorage.setItem("products",JSON.stringify(products));
-
   renderProducts();
 }
 
@@ -160,9 +153,5 @@ function del(i){
   renderProducts();
 }
 
-renderProducts();
-
-</script>
-
-</body>
+</script></body>
 </html>
