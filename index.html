@@ -6,6 +6,15 @@
 <title>Cardápio Pro</title>
 
 <style>
+  @keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.pop {
+  animation: pop 0.3s ease;
+}
 body {
   margin: 0;
   font-family: Arial;
@@ -76,35 +85,31 @@ button {
 
 <body>
 
-<header>🍔 MEU CARDÁPIO PRO</header>
-
-<div class="container">
-
+<header>🍔 CARDÁPIO SIRI CASCUDO</header>
   <div class="card">
-    <div>
-      <b>X-Burger</b><br>
-      R$ 12,00
-    </div>
-    <button onclick="add('X-Burger',12)">Adicionar</button>
+  <div>
+    <b>X-Burger</b><br>
+    R$ <span id="p1">12</span>
   </div>
-
-  <div class="card">
-    <div>
-      <b>X-Salada</b><br>
-      R$ 14,00
-    </div>
-    <button onclick="add('X-Salada',14)">Adicionar</button>
-  </div>
-
-  <div class="card">
-    <div>
-      <b>Refrigerante</b><br>
-      R$ 5,00
-    </div>
-    <button onclick="add('Refrigerante',5)">Adicionar</button>
-  </div>
-
+  <button onclick="add('X-Burger',getPreco('p1'))">Adicionar</button>
 </div>
+
+<div class="card">
+  <div>
+    <b>X-Salada</b><br>
+    R$ <span id="p2">14</span>
+  </div>
+  <button onclick="add('X-Salada',getPreco('p2'))">Adicionar</button>
+</div>
+
+<div class="card">
+  <div>
+    <b>Refrigerante</b><br>
+    R$ <span id="p3">5</span>
+  </div>
+  <button onclick="add('Refrigerante',getPreco('p3'))">Adicionar</button>
+</div>
+
 
 <!-- CARRINHO -->
 <div class="cart">
@@ -113,6 +118,27 @@ button {
 </div>
 
 <script>
+  function abrirPainel() {
+  let senha = prompt("Digite a senha do admin:");
+
+  if (senha === "1234") {
+    document.getElementById("painel").style.display = "block";
+  } else {
+    alert("Senha incorreta ❌");
+  }
+}
+
+function salvarPrecos() {
+  document.getElementById("p1").innerText = document.getElementById("preco1").value;
+  document.getElementById("p2").innerText = document.getElementById("preco2").value;
+  document.getElementById("p3").innerText = document.getElementById("preco3").value;
+
+  alert("Preços atualizados com sucesso ✔️");
+}
+
+function getPreco(id) {
+  return parseFloat(document.getElementById(id).innerText);
+}
 let carrinho = [];
 
 function add(nome, preco) {
@@ -135,9 +161,26 @@ function finalizar() {
   let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
   msg += "%0ATotal: R$ " + total;
 
-  window.open("https://wa.me/5511999999999?text=" + msg);
+  window.open("https://wa.me/5511953577785?text=" + msg);
 }
 </script>
+  
+  <div style="text-align:center; padding:10px;">
+  <button onclick="abrirPainel()">🔧 Painel Admin</button>
+</div>
 
-</body>
+<div id="painel" style="display:none; background:#222; padding:15px; margin:10px; border-radius:10px; max-width:400px; margin:auto;">
+  <h3>Painel de Preços</h3>
+
+  <label>X-Burger:</label>
+  <input type="number" id="preco1" value="12"><br><br>
+
+  <label>X-Salada:</label>
+  <input type="number" id="preco2" value="14"><br><br>
+
+  <label>Refrigerante:</label>
+  <input type="number" id="preco3" value="5"><br><br>
+
+  <button onclick="salvarPrecos()">💾 Salvar</button>
+</div>
 </html
