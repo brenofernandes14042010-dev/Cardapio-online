@@ -1,114 +1,156 @@
-import { useEffect, useMemo, useState } from "react"; import { Button } from "@/components/ui/button"; import { Card, CardContent } from "@/components/ui/card"; import { Input } from "@/components/ui/input"; import { Trash } from "lucide-react";
+projeto/
+ ├── backend/
+ │    ├── server.js
+ │    ├── package.json
+ │    ├── .env
+ │
+ └── frontend/
+      └── App.jsx
 
-export default function App() { const defaultItems = [ { id: 1, name: "X-Burguer", price: 15 }, { id: 2, name: "X-Salada", price: 18 }, { id: 3, name: "Batata Frita", price: 10 }, { id: 4, name: "Refrigerante", price: 6 }, ];
-
-const [items, setItems] = useState(() => { const saved = localStorage.getItem("items"); return saved ? JSON.parse(saved) : defaultItems; });
-
-const [cart, setCart] = useState([]); const [orders, setOrders] = useState(() => { const saved = localStorage.getItem("orders"); return saved ? JSON.parse(saved) : []; });
-
-const [admin, setAdmin] = useState(false); const [password, setPassword] = useState(""); const ADMIN_PASS = "1234";
-
-const [whatsapp, setWhatsapp] = useState("5511953577785"); const [paymentMethod, setPaymentMethod] = useState("pix"); const [pixQr, setPixQr] = useState(null);
-
-useEffect(() => { localStorage.setItem("items", JSON.stringify(items)); }, [items]);
-
-useEffect(() => { localStorage.setItem("orders", JSON.stringify(orders)); }, [orders]);
-
-const playSound = () => { const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg"); audio.play(); };
-
-const addToCart = (item) => { setCart([...cart, item]); playSound(); };
-
-const removeFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
-
-const total = useMemo(() => cart.reduce((a, b) => a + b.price, 0), [cart]);
-
-// ===== PIX AUTOMÁTICO (INTEGRAÇÃO REAL) ===== const createPixPayment = async (order) => { try { // Backend necessário (ex: /api/create-pix) const res = await fetch("/api/create-pix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: order.total, description: "Pedido restaurante", }), });
-
-const data = await res.json();
-
-  // Espera resposta tipo Mercado Pago:
-  // { qr_code: "base64...", payment_id: "123" }
-  setPixQr(data.qr_code);
-
-  window.open(data.payment_url, "_blank");
-} catch (err) {
-  alert("Erro ao gerar PIX. Configure o backend.");
+    {
+  "name": "backend-pix",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0"
+  }
 }
 
-};
+MERCADO_PAGO_TOKEN=SEU_ACCESS_TOKEN_AQUI
+import express from "express";
+import cors from "cors";
+import axios from "axios";
+import dotenv from "dotenv";
 
-const sendOrder = () => { if (cart.length === 0) return;
+dotenv.config();
 
-const newOrder = {
-  id: Date.now(),
-  items: cart,
-  total,
-  status: "Aguardando pagamento",
-  payment: paymentMethod,
-  date: new Date().toLocaleString(),
-};
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-setOrders([newOrder, ...orders]);
-setCart([]);
+// 🔥 CRIAR PIX AUTOMÁTICO
+app.post("/api/create-pix", async (req, res) => {
+  try {
+    const { amount } = req.body;
 
-if (paymentMethod === "pix") {
-  createPixPayment(newOrder);
-}
+    const payment = await axios.post(
+      "https://api.mercadopago.com/v1/payments",
+      {
+        transaction_amount: Number(amount),
+        payment_method_id: "pix",
+        description: "Pedido restaurante",
+        payer: { email: "cliente@email.com" }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-let msg = "🍔 NOVO PEDIDO%0A%0A";
-newOrder.items.forEach(i => {
-  msg += `- ${i.name} R$${i.price}%0A`;
+    const pix = payment.data.point_of_interaction.transaction_data;
+
+    res.json({
+      id: payment.data.id,
+      qr: pix.qr_code_base64,
+      copia_cola: pix.qr_code,
+      link: pix.ticket_url
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao gerar PIX" });
+  }
 });
 
-msg += `%0A💰 Total: R$${newOrder.total}%0A💳 PIX`;
+// 🔎 STATUS DO PAGAMENTO
+app.get("/api/status/:id", async (req, res) => {
+  try {
+    const r = await axios.get(
+      `https://api.mercadopago.com/v1/payments/${req.params.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_TOKEN}`
+        }
+      }
+    );
 
-window.open(`https://wa.me/${whatsapp}?text=${msg}`, "_blank");
+    res.json({ status: r.data.status });
+  } catch {
+    res.status(500).json({ error: "Erro status" });
+  }
+});
 
-};
+app.listen(3001, () => console.log("🔥 Backend rodando na porta 3001"));
+cd backend
+npm install
+node server.js
+import { useEffect, useMemo, useState } from "react";
 
-const loginAdmin = () => { if (password === ADMIN_PASS) setAdmin(true); else alert("Senha incorreta"); };
+export default function App() {
+  const itemsDefault = [
+    { id: 1, name: "X-Burguer", price: 15 },
+    { id: 2, name: "X-Salada", price: 18 },
+    { id: 3, name: "Batata", price: 10 },
+  ];
 
-return ( <div className="p-4 max-w-5xl mx-auto"> <h1 className="text-3xl font-bold">🍔 iFood PRO PIX</h1>
+  const [items] = useState(itemsDefault);
+  const [cart, setCart] = useState([]);
+  const [pix, setPix] = useState(null);
 
-<Input className="my-2" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+  const total = useMemo(
+    () => cart.reduce((a, b) => a + b.price, 0),
+    [cart]
+  );
 
-  <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-    <option value="pix">PIX automático</option>
-    <option value="card">Cartão</option>
-  </select>
+  const add = (item) => setCart([...cart, item]);
+  const remove = (i) => setCart(cart.filter((_, idx) => idx !== i));
 
-  <div className="grid md:grid-cols-3 gap-4">
+  // 💳 PIX AUTOMÁTICO
+  const pagarPix = async () => {
+    const res = await fetch("http://localhost:3001/api/create-pix", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: total })
+    });
 
-    <div>
-      {items.map(item => (
-        <Card key={item.id} className="mb-2">
-          <CardContent className="flex justify-between">
-            <div>{item.name} - R$ {item.price}</div>
-            <Button onClick={() => addToCart(item)}>+</Button>
-          </CardContent>
-        </Card>
+    const data = await res.json();
+    setPix(data);
+  };
+
+  return (
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
+      <h1>🍔 iFood Clone PRO</h1>
+
+      <h2>Menu</h2>
+      {items.map((i) => (
+        <div key={i.id}>
+          {i.name} - R$ {i.price}
+          <button onClick={() => add(i)}>Adicionar</button>
+        </div>
       ))}
-    </div>
 
-    <div>
       <h2>Carrinho</h2>
-      {cart.map((item, i) => (
-        <div key={i} className="flex justify-between">
-          {item.name} R$ {item.price}
-          <Button onClick={() => removeFromCart(i)}>X</Button>
+      {cart.map((i, idx) => (
+        <div key={idx}>
+          {i.name} - R$ {i.price}
+          <button onClick={() => remove(idx)}>X</button>
         </div>
       ))}
 
       <h3>Total: R$ {total}</h3>
-      <Button onClick={sendOrder}>Finalizar PIX</Button>
 
-      {pixQr && (
-        <div className="mt-4">
-          <h3>PIX QR CODE:</h3>
-          <img src={pixQr} alt="PIX" />
+      <button onClick={pagarPix}>Pagar com PIX</button>
+
+      {pix && (
+        <div>
+          <h2>PIX GERADO</h2>
+          <img src={pix.qr} width={200} />
+          <p>{pix.copia_cola}</p>
         </div>
       )}
     </div>
-
-  </div>
-</div>
+  );
+}
